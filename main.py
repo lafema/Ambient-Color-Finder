@@ -2,7 +2,7 @@
 Ambient Color Finder
 
 This Script will find the dominant color on the current screen
-and set it to an light system for example light bulbs or led straps
+and set it to a light system for example light bulbs or led straps
 
 Must be installed for main system:
 pip install pyscreenshot    Python Screenshot 2.2     https://github.com/ponty/pyscreenshot
@@ -12,10 +12,13 @@ pip install colorthief      Color Thief 0.2.1         https://github.com/fengsp/
 Must be installed for test system (test_color_on_screen):
 pip install pygame          Pygame 2.0.0              https://github.com/pygame/
 
-Must be installed for Awox mesh light bulbs:
-git clone python-awox-mesh-light                      https://github.com/Leiaz/python-awox-mesh-light
-pip install bluepy          bluepy 1.3.0              https://github.com/IanHarvey/bluepy
-pip install pycryptodome    pycryptodome 3.9.9        https://github.com/Legrandin/pycryptodome/
+Must be installed for Awox mesh light bulbs / only works on Linux (awox_mesh_light):
+pip install awoxmeshlight   Awox mesh light 0.2.0     https://github.com/leiaz/python-awox-mesh-light
+awoxmeshlight also install  bluepy 1.3.0              https://github.com/IanHarvey/bluepy
+awoxmeshlight also install  pycryptodome 3.9.9        https://github.com/Legrandin/pycryptodome/
+if bluepy fails with "ERROR: Failed building wheel for bluepy" do:
+    apt install unixodbc-dev
+    pip install pyodbc
 
 """
 
@@ -31,7 +34,7 @@ Configuration
 test_color_on_screen
 awox_mesh_light
 '''
-LIGHT_SYSTEM = 'test_color_on_screen'
+LIGHT_SYSTEM = 'awox_mesh_light'
 
 
 def take_screenshot(bbox: tuple = (0, 0, 0, 0)) -> Image:
@@ -141,8 +144,8 @@ def convert_rgb_dec_to_hex(rgb: tuple) -> tuple:
 
 def gamma_decode(color_channel: int) -> float:
     """
-    Convert a gamma encoded 8 bit color to a linear value.
-    :param color_channel: 8 bit color
+    Convert a gamma encoded 8-bit color to a linear value.
+    :param color_channel: 8-bit color
     :type color_channel: int
     :return linearized value between 0.0 and 1.0
     :rtype: float
@@ -200,29 +203,32 @@ def calculate_percentage_value(percent_figure: float, basic_value: int) -> int:
 
 def set_values_to_light_system(rgb_color, brightness, system: str) -> bool:
     """
-    Set the pre calculate color and brightness to an available and configured light system
+    Set the pre-calculate color and brightness to an available and configured light system
     :param rgb_color: color in decimal numbers
     :param brightness: brightness close to human vision
     :param system: name of the configured light system
     :return: if false it will stop the infinite loop and quit the program otherwise it continues
     :rtype: bool
     """
-    hex_color = convert_rgb_dec_to_hex(rgb_color)
-    hex_brightness = hex(calculate_percentage_value(brightness, 64))  # get hex value of the brightness 0 to 64
-    print('###', rgb_color, hex_color, brightness, hex_brightness)
-
     if system == 'test_color_on_screen':
-        test_color_on_screen_draw_color(rgb_color)
-        return True
+        test_color_on_screen_draw_color(
+            rgb_color
+        )
+    elif system == 'awox_mesh_light':
+        awox_mesh_light_set_values(
+            convert_rgb_dec_to_hex(rgb_color),  # RGB colors decimal as hexadecimal numbers
+            hex(calculate_percentage_value(brightness, 64))  # hexadecimal value of the brightness 0 to 64
+        )
     else:
         print('ERROR: Unknown lightning system configured.')
         return False
+    return True
 
 
 def test_color_on_screen_initialize_window():
     """
     Initialises Pygame to display a window with thumbnail and background color to validate color and screen
-    :return: Pygame window 800x60 pixel on top left on screen with with background color
+    :return: Pygame window 800x60 pixel on top left on screen with background color
     :rtype: pygame.Surface
     """
     import os
@@ -256,7 +262,7 @@ def test_color_on_screen_set_thumbnail():
         screen_current.size,
         screen_current.mode
     )
-    gui.blit(
+    system.blit(
         screen_view.convert(),
         screen_view.get_rect(
             center=(0, 0)
@@ -274,8 +280,25 @@ def test_color_on_screen_draw_color(rgb_color: tuple):
     surface = pygame.display.get_surface()
     rect = pygame.Rect(10, 10, 10, 10)
     surface.fill((255, 0, 0), rect)
-    gui.fill(rgb_color)
+    system.fill(rgb_color)
     pygame.display.flip()
+
+
+def awox_mesh_light_connect():
+    """
+    Initialises Awox mesh light
+    Connect to the mesh and turn on the light
+    :return:
+    """
+    awox_light = awoxmeshlight.AwoxMeshLight('AA:BB:CC:DD:EE:FF')
+    awox_light.connect()
+    awox_light.on()
+    return awox_light
+
+
+def awox_mesh_light_set_values(hex_rgb_color: tuple, hex_brightness: str):
+    system.setColor()
+    pass
 
 
 # Main
@@ -286,10 +309,14 @@ if __name__ == '__main__':
     bounding_box = get_screen_bounding_box(screen_before)  # getting bounding box out of the first screenshot
     rgb_color_before = (255, 255, 255)  # initialize color with white
 
-    # initialises Pygame to display a window with thumbnail and background color to validate color and screen
     if LIGHT_SYSTEM == 'test_color_on_screen':
+        # initialises Pygame to display a window with thumbnail and background color to validate color and screen
         import pygame
-        gui = test_color_on_screen_initialize_window()
+        system = test_color_on_screen_initialize_window()
+    elif LIGHT_SYSTEM == 'awox_mesh_light':
+        # initialises Awox mesh light
+        import awoxmeshlight
+        system = awox_mesh_light_connect()
 
     # infinite loop
     try:
@@ -305,13 +332,13 @@ if __name__ == '__main__':
                 do_loop = test_color_on_screen_quit()  # quits test system (is needed to make Pygame work properly)
                 test_color_on_screen_set_thumbnail()  # set the screenshot as a thumbnail into the Pygame window
 
-            # only if the screenshot is different than before
+            # only if the screenshot is different from before
             if images_are_different(screen_before, screen_current):
 
                 screen_before = screen_current  # remember screenshot
                 rgb_color_current = get_dominant_color(screen_current)  # get the dominant color on the screen
 
-                # only if color is different than before
+                # only if color is different from before
                 if colors_are_different(rgb_color_current, rgb_color_before):
 
                     rgb_color_before = rgb_color_current  # remember color
