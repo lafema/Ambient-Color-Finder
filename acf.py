@@ -5,23 +5,24 @@ This Script will find the dominant color on the current screen
 and set it to a light system for example light bulbs or led straps
 
 Must be installed for main system:
-pip install pyscreenshot    Python Screenshot 2.2     https://github.com/ponty/pyscreenshot
-pip install Pillow          Pillow (PIL fork) 8.1     https://github.com/python-pillow/Pillow
-pip install colorthief      Color Thief 0.2.1         https://github.com/fengsp/color-thief-py
+pip install pyscreenshot    -    Python Screenshot 2.2     https://github.com/ponty/pyscreenshot
+pip install Pillow          -    Pillow (PIL fork) 8.1     https://github.com/python-pillow/Pillow
+pip install colorthief      -    Color Thief 0.2.1         https://github.com/fengsp/color-thief-py
 
 Must be installed for test system (test_color_on_screen):
-pip install pygame          Pygame 2.0.0              https://github.com/pygame/
+pip install pygame          -    Pygame 2.0.0              https://github.com/pygame/
 
 Must be installed for Awox mesh light bulbs / only works on Linux (awox_mesh_light):
-pip install awoxmeshlight   Awox mesh light 0.2.0     https://github.com/leiaz/python-awox-mesh-light
-awoxmeshlight also install  bluepy 1.3.0              https://github.com/IanHarvey/bluepy
-awoxmeshlight also install  pycryptodome 3.9.9        https://github.com/Legrandin/pycryptodome/
+pip install awoxmeshlight   -    Awox mesh light 0.2.0     https://github.com/leiaz/python-awox-mesh-light
+awoxmeshlight also install  -    bluepy 1.3.0              https://github.com/IanHarvey/bluepy
+awoxmeshlight also install  -    pycryptodome 3.9.9        https://github.com/Legrandin/pycryptodome/
+
 if bluepy fails with "ERROR: Failed building wheel for bluepy" do:
     apt install unixodbc-dev
     pip install pyodbc
 
 """
-
+import pygame
 import pyscreenshot
 from io import BytesIO
 from PIL import ImageChops, ImageStat
